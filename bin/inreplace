@@ -1,0 +1,37 @@
+#!/usr/bin/env ruby
+
+lib = File.expand_path('../../lib', __FILE__)
+$LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
+
+require 'inreplace'
+
+require 'optparse'
+require 'pathname'
+
+module Inreplace
+  class CLI
+    def initialize(argv)
+      @argv = argv
+    end
+
+    def run
+      settings = parse_options(@argv)
+      input_io = settings.input == '-' ? $stdin : Pathname.new(settings.input)
+      dest_file = Pathname.new(settings.file)
+      injector = Inreplace::Injector.new(dest_file: dest_file, tag: settings.tag)
+      injector.inject(input_io)
+    end
+
+    private def parse_options(argv)
+      settings = Inreplace::Settings.new
+      OptionParser.new do |o|
+        o.on('-f', '--file FILE') {|v| settings.file = v }
+        o.on('-i', '--input IO') {|v| settings.input = v }
+        o.on('-t', '--tag TAG') {|v| settings.tag = v }
+      end.parse!(argv)
+      settings
+    end
+  end
+end
+
+Inreplace::CLI.new(ARGV).run
